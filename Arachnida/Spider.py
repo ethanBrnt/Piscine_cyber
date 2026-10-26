@@ -1,11 +1,14 @@
-
+import hashlib
 import argparse
 import requests
 import validators
+import os
 from bs4 import BeautifulSoup
 from requests.exceptions import Timeout, RequestException
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
+
+hashes_contents = set()
 
 def main():
     parser = argparse.ArgumentParser(description="The spider program allow you to extract all the images(jpg/jpeg; .png; .gif; .bmp) from a website, recursively, by providing a url as a parameter")
@@ -23,34 +26,45 @@ def main():
     url = url.split("#")[0].rstrip('/')
     recursively = args.level if args.recursive else 0
     if not validators.url(url):
-        print ("Error while accessing the page: \"" + url + "\"")
+        print (f"Error while accessing the page: \"{url}\"")
         exit (1)
     domain = urlparse(url).netloc
-    # print("Debug: get_image on " + url)
-    get_images(url, domain, args.path, recursively, urls_downloaded = {})
+    if not os.path.isdir(args.path):
+        try:
+            Path(args.path).mkdir(parents=True, exist_ok=True)
+        except Exception:
+            print(f"Error cant create directory: {args.path}")
+            exit(1)
+    if not os.access(args.path, os.W_OK):
+        print(f"Error permission denied on: {args.path}")
+        exit (1)
+    parse_url_recursivelly(url, domain, args.path, recursively, urls_downloaded = {})
 
 
-def get_images(url, domain, path, recursively, urls_downloaded):
-    # print()
-    # print("** Debug: start rec = " + str(recursively) + " **")
-
-    urls_downloaded[url] = False;
-    # print("* Debug: url added to array = " + url + " *")
-
+def parse_url_recursivelly(url, domain, path, recursively, urls_downloaded):
     try:
         response = requests.get(url, timeout=5)
         response.raise_for_status() 
     except Timeout:
-        print("Erreur : La requête a expiré (Timeout).")
+        print("Error request Timeout")
+        urls_downloaded.setdefault(url, True)
         return urls_downloaded
     except RequestException as e:
-        print("Une erreur réseau est survenue.")
+        print("Error network")
+        urls_downloaded.setdefault(url, True)
         return urls_downloaded
 
-    html_content = BeautifulSoup(response.text, 'html.parser')
-    if (url not in urls_downloaded):
-        parse_download_images(html_content, url, path)
 
+
+    html_content = BeautifulSoup(response.text, 'html.parser')
+        
+    if url not in urls_downloaded:
+        print(url)
+        if is_same_page(response.text):
+            urls_downloaded.setdefault(url, True)
+        else:
+            download_images(html_content, url, path)
+            urls_downloaded.setdefault(url, False)
 
     if recursively > 0:
         recursively -= 1
@@ -59,16 +73,18 @@ def get_images(url, domain, path, recursively, urls_downloaded):
             joined_link = urljoin(url, href)
             clean_link = joined_link.split("#")[0].rstrip('/')
             clean_link = clean_link.split('?')[0].rstrip('/')
-            if (urls_downloaded.get(clean_link, True) not True) and (urlparse(clean_link).netloc == domain):
+            if urlparse(clean_link).netloc == domain and (clean_link not in urls_downloaded or urls_downloaded[clean_link] == False):
                 # print("\n------ Debug: Recursive = " + str(recursively) + " url " + clean_link + " ------")
-                get_images(clean_link, domain, path, recursively, urls_downloaded)
+                parse_url_recursivelly(clean_link, domain, path, recursively, urls_downloaded)
         urls_downloaded[url] = True
     return urls_downloaded
 
 
-def parse_download_images(html_content, url, path):
+def download_images(html_content, url, path):
     authorised_extension = ["jpg", "jpeg", "png", "gif", "bmp"]
-    
+
+    print(f"Page: {url}")
+
     for img in html_content.find_all('img'):
         src = img.get("src") or img.get("data-src")
         if not src:
@@ -78,24 +94,24 @@ def parse_download_images(html_content, url, path):
         file_extension = filename.rpartition('.')[-1].lower()
         
         if file_extension in authorised_extension:
-            Path(path).mkdir(parents=True, exist_ok=True)
             r = requests.get(absolute_src, allow_redirects=True)
             if r.status_code != 200:
-                print ("Error while downloading the image: " + absolute_src)
+                print (f"Error while downloading the image: {absolute_src}")
                 continue
-            print("Downloading: " + filename + " in " + path)
+            print(f"Downloading: {filename}")
             open(path + filename, 'wb').write(r.content)
+    print()
+
+
+def is_same_page(html_content):
+    cleaned_content = html_content.strip()
+    hash_page = hashlib.sha256(cleaned_content.encode('utf-8')).hexdigest()
+    
+    if hash_page in hashes_contents:
+        return True
+    else:
+        hashes_contents.add(hash_page)
+        return False
 
 if __name__ == '__main__':
     main()
-
-
-    # http://0.0.0.0:8000/ == http://0.0.0.0:8000/index.html
-    # mais pas pour le programme
-
-    # index.html?x=1 pas gerer par 
-    # filename = absolute_src.rpartition('/')[-1].split('?')[0]
-
-    # la condition devrais etre si l'adresse et ses sous adresses ont ete faite ne pas y aller
-    # pour cela tableau a double entree adresse - sous adresse bool
-    # sous adresse seta true au moment e leur recherche. 
