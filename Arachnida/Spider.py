@@ -53,8 +53,6 @@ def parse_url_recursivelly(url, domain, path, recursively, urls_downloaded):
         urls_downloaded.setdefault(url, True)
         return urls_downloaded
 
-
-
     html_content = BeautifulSoup(response.text, 'html.parser')
         
     if url not in urls_downloaded:
