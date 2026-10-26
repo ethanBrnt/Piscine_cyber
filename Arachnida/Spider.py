@@ -18,7 +18,6 @@ def main():
     parser.add_argument('-l', '--level', type=int, default=5, help="Indicates the maximum depth level of the recursive download (default: 5)")
     parser.add_argument('-p', '--path', type=str, default="./data/", help="Indicates the path where the downloaded files will be saved (default: ./data/)")
 
-    # Récupérer les arguments saisis dans le terminal
     args = parser.parse_args()
 
     url = args.url
@@ -46,11 +45,11 @@ def parse_url_recursivelly(url, domain, path, recursively, urls_downloaded):
         response = requests.get(url, timeout=5)
         response.raise_for_status() 
     except Timeout:
-        print("Error request Timeout")
+        print(f"Error request Timeout on {url}")
         urls_downloaded.setdefault(url, True)
         return urls_downloaded
     except RequestException as e:
-        print("Error network")
+        print(f"Error network on {url}")
         urls_downloaded.setdefault(url, True)
         return urls_downloaded
 
@@ -59,7 +58,6 @@ def parse_url_recursivelly(url, domain, path, recursively, urls_downloaded):
     html_content = BeautifulSoup(response.text, 'html.parser')
         
     if url not in urls_downloaded:
-        print(url)
         if is_same_page(response.text):
             urls_downloaded.setdefault(url, True)
         else:
