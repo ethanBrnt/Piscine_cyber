@@ -1,3 +1,4 @@
+
 import argparse
 import requests
 import validators
@@ -7,7 +8,6 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 def main():
-    # Initialiser le dictionnaire d'arguments
     parser = argparse.ArgumentParser(description="The spider program allow you to extract all the images(jpg/jpeg; .png; .gif; .bmp) from a website, recursively, by providing a url as a parameter")
 
     parser.add_argument('url', type=str, help="The target website")
@@ -26,14 +26,16 @@ def main():
         print ("Error while accessing the page: \"" + url + "\"")
         exit (1)
     domain = urlparse(url).netloc
-    get_images(url, domain, args.path, recursively, urls_downloaded = set())
+    # print("Debug: get_image on " + url)
+    get_images(url, domain, args.path, recursively, urls_downloaded = {})
 
 
 def get_images(url, domain, path, recursively, urls_downloaded):
-    print()
-    print("** Debug: start rec = " + str(recursively) + " **")
-    urls_downloaded.add(url)
-    print("* Debug: url added to array = " + url + " *")
+    # print()
+    # print("** Debug: start rec = " + str(recursively) + " **")
+
+    urls_downloaded[url] = False;
+    # print("* Debug: url added to array = " + url + " *")
 
     try:
         response = requests.get(url, timeout=5)
@@ -46,18 +48,21 @@ def get_images(url, domain, path, recursively, urls_downloaded):
         return urls_downloaded
 
     html_content = BeautifulSoup(response.text, 'html.parser')
-    parse_download_images(html_content, url, path)
+    if (url not in urls_downloaded):
+        parse_download_images(html_content, url, path)
+
 
     if recursively > 0:
-        print("\n\n------ Debug: Recursive = " + str(recursively) + " ------")
+        recursively -= 1
         for a in html_content.find_all("a", href=True):
             href = a["href"]
             joined_link = urljoin(url, href)
             clean_link = joined_link.split("#")[0].rstrip('/')
             clean_link = clean_link.split('?')[0].rstrip('/')
-            if (clean_link not in urls_downloaded) and (urlparse(clean_link).netloc == domain):
-                print("Debug: get_image on " + clean_link)
-                get_images(clean_link, domain, path, recursively - 1, urls_downloaded)
+            if (urls_downloaded.get(clean_link, True) not True) and (urlparse(clean_link).netloc == domain):
+                # print("\n------ Debug: Recursive = " + str(recursively) + " url " + clean_link + " ------")
+                get_images(clean_link, domain, path, recursively, urls_downloaded)
+        urls_downloaded[url] = True
     return urls_downloaded
 
 
@@ -69,7 +74,6 @@ def parse_download_images(html_content, url, path):
         if not src:
             continue
         absolute_src = urljoin(url, src)
-        # Nettoie les paramètres GET (ex: image.jpg?v=12)
         filename = absolute_src.rpartition('/')[-1]
         file_extension = filename.rpartition('.')[-1].lower()
         
@@ -84,3 +88,14 @@ def parse_download_images(html_content, url, path):
 
 if __name__ == '__main__':
     main()
+
+
+    # http://0.0.0.0:8000/ == http://0.0.0.0:8000/index.html
+    # mais pas pour le programme
+
+    # index.html?x=1 pas gerer par 
+    # filename = absolute_src.rpartition('/')[-1].split('?')[0]
+
+    # la condition devrais etre si l'adresse et ses sous adresses ont ete faite ne pas y aller
+    # pour cela tableau a double entree adresse - sous adresse bool
+    # sous adresse seta true au moment e leur recherche. 
