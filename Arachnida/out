@@ -1,0 +1,120 @@
+Page: http://0.0.0.0:8000
+Downloading: pic00.jpg
+Downloading: pic07.png
+Downloading: pic14.bmp
+Downloading: pic00.jpg
+Downloading: pic03.gif
+Downloading: pic06.jpeg
+Error while downloading the image: http://0.0.0.0:8000/img/inexistante.png
+
+
+--------------- RECURSIVE 1er NIVEAU ---------------------------
+
+Page: http://0.0.0.0:8000/alpha/index.html
+Downloading: pic01.jpeg
+Downloading: pic08.gif
+Downloading: pic15.jpg
+
+Page: http://0.0.0.0:8000/alpha/alpha/index.html
+Downloading: pic04.bmp
+Downloading: pic11.jpeg
+Downloading: pic18.gif
+
+Page: http://0.0.0.0:8000/alpha/beta/index.html
+Downloading: pic05.jpg
+Downloading: pic12.png
+Downloading: pic19.bmp
+Downloading: pic05.jpg
+
+Page: http://0.0.0.0:8000/alpha/gamma/index.html
+Downloading: pic06.jpeg
+Downloading: pic13.gif
+Downloading: UPPER.PNG
+
+Page: http://0.0.0.0:8000/beta/gamma/beta/gamma/index.html
+Downloading: pic06.jpeg
+Downloading: pic13.gif
+Downloading: UPPER.PNG
+Downloading: pic06.jpeg
+Downloading: pic06.jpeg
+
+Erreur réseau : 404 Client Error: File not found for url: http://0.0.0.0:8000/alpha/page-inexistante.html
+Page: http://0.0.0.0:8000/img/notes.txt
+
+Page: http://0.0.0.0:8000/beta/index.html
+Downloading: pic02.png
+Downloading: pic09.bmp
+Downloading: pic16.jpeg
+
+Page: http://0.0.0.0:8000/beta/alpha/index.html
+Downloading: pic07.png
+Downloading: pic14.bmp
+Downloading: pic00.jpg
+Downloading: pic03.gif
+
+Page: http://0.0.0.0:8000/beta/beta/index.html
+Downloading: pic08.gif
+Downloading: pic15.jpg
+Downloading: pic01.jpeg
+
+Page: http://0.0.0.0:8000/beta/gamma/index.html
+Downloading: pic09.bmp
+Downloading: pic16.jpeg
+Downloading: pic02.png
+Downloading: pic06.jpeg
+
+Erreur réseau : 404 Client Error: File not found for url: http://0.0.0.0:8000/beta/page-inexistante.html
+Page: http://0.0.0.0:8000/gamma/index.html
+Downloading: pic03.gif
+Downloading: pic10.jpg
+Downloading: pic17.png
+
+Page: http://0.0.0.0:8000/gamma/alpha/index.html
+Downloading: pic10.jpg
+Downloading: pic17.png
+Downloading: pic03.gif
+Downloading: pic10.jpg
+
+Page: http://0.0.0.0:8000/gamma/beta/index.html
+Downloading: pic11.jpeg
+Downloading: pic18.gif
+Downloading: pic04.bmp
+Error while downloading the image: http://0.0.0.0:8000/gamma/beta/img/inexistante.png
+
+Page: http://0.0.0.0:8000/gamma/gamma/index.html
+Downloading: pic12.png
+Downloading: pic19.bmp
+Downloading: pic05.jpg
+
+
+--------------- RECURSIVE 2nd NIVEAU ---------------------------
+
+Erreur réseau : 404 Client Error: File not found for url: http://0.0.0.0:8000/gamma/page-inexistante.html
+Page: http://0.0.0.0:8000/beta/alpha/gamma/index.html
+Downloading: pic03.gif
+Downloading: pic10.jpg
+Downloading: pic17.png
+
+Page: http://0.0.0.0:8000/beta/alpha/gamma/alpha/index.html
+Downloading: pic10.jpg
+Downloading: pic17.png
+Downloading: pic03.gif
+
+Page: http://0.0.0.0:8000/beta/alpha/gamma/beta/index.html
+Downloading: pic11.jpeg
+Downloading: pic18.gif
+Downloading: pic04.bmp
+
+Page: http://0.0.0.0:8000/beta/alpha/gamma/gamma/index.html
+Downloading: pic12.png
+Downloading: pic19.bmp
+Downloading: pic05.jpg
+Downloading: pic12.png
+
+Page: http://0.0.0.0:8000/gamma/beta/alpha/index.html
+Downloading: pic13.gif
+Downloading: UPPER.PNG
+Downloading: pic06.jpeg
+
+Erreur réseau : 404 Client Error: File not found for url: http://0.0.0.0:8000/beta/alpha/gamma/page-inexistante.html
+Erreur réseau : 404 Client Error: File not found for url: http://0.0.0.0:8000/page-inexistante.html
