@@ -1,3 +1,4 @@
+import uuid
 import hashlib
 import argparse
 import requests
@@ -39,7 +40,8 @@ def main():
         print(f"Error permission denied on: {args.path}")
         exit (1)
     visited_urls = {}
-    parse_url_recursivelly(url, domain, args.path, recursively, visited_urls)
+    if parse_url_recursivelly(url, domain, args.path, recursively, visited_urls) == 1:
+        exit (1)
 
 
 def parse_url_recursivelly(url, domain, path, depth, visited_urls):
@@ -54,8 +56,9 @@ def parse_url_recursivelly(url, domain, path, depth, visited_urls):
             response = requests.get(url, timeout=5)
             response.raise_for_status()
         except (Timeout, RequestException):
+            print (f"Error while accessing the page: \"{url}\"\n")
             visited_urls[url] = -1
-            return
+            return (1)
 
         if "text/html" not in response.headers.get("Content-Type", ""):
             visited_urls[url] = -1
@@ -81,6 +84,7 @@ def parse_url_recursivelly(url, domain, path, depth, visited_urls):
 
 def download_images(html_content, url, path):
     authorised_extension = ["jpg", "jpeg", "png", "gif", "bmp"]
+    folder = Path(path + urlparse(url).path)
 
     print(f"Page: {url}")
 
@@ -94,12 +98,20 @@ def download_images(html_content, url, path):
 
         if file_extension in authorised_extension:
             try:
-                r = requests.get(absolute_src, allow_redirects=True)
-            except (Timeout, RequestException) as e:
+                r = requests.get(absolute_src, allow_redirects=True, timeout=5)
+                if r.status_code != 200:
+                    continue
+            except (Timeout, RequestException):
                 print (f"Error while downloading the image: {absolute_src}")
                 continue
-            print(f"Downloading: {filename}")
-            open(path + '/' + filename, 'wb').write(r.content)
+
+            target_file = folder / filename
+            if target_file.exists():
+                new_filename = f"{uuid.uuid4().hex[:10]}.{file_extension}"
+                target_file = folder / new_filename
+            folder.mkdir(parents=True, exist_ok=True)
+            print(f"Downloading: {filename} as {target_file.name} in {folder}")
+            target_file.write_bytes(r.content)
     print()
 
 
