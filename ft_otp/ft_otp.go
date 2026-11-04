@@ -46,19 +46,33 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		// T is (unix time (seconds since 1st jan 1970) / 30)
+		// unix time (seconds since 1st jan 1970)
 		now := time.Now()
-		// hmac = HMAC-SHA-1(K, T)
-		counter := now.Unix() / 30
-		buf := make([]byte, 8)
-		binary.BigEndian.PutUint64(buf, uint64(counter))
-		h := hmac.New(sha1.New, []byte(uncryptedKey))
-		h.Write(buf)
-		result := h.Sum(nil)
-		fmt.Println(result)
-		// TODO return table 
-		// [70 112 181 45 86 59 190 246 66 167 116 179 23 246 58 229 247 237 112 204]
+		// diviser par 30 pour que la valeur final change toutes les 30 secondes
+		counter := now.Unix() / 30 
 
+		// alloc tableau de 8 octets
+		buf := make([]byte, 8)
+
+		// litle Endian -> big Endian dans le tableau de 8 octets
+		binary.BigEndian.PutUint64(buf, uint64(counter))
+		// prepa de la cle et de l'algo de hashage
+		h := hmac.New(sha1.New, []byte(uncryptedKey))
+		// passer le buffer qui contient le temp actuel a h
+		h.Write(buf)
+		// on calcul et recuper le resultat dans result (20 cases de tableau)
+		result := h.Sum(nil)
+
+		// masque hexa (0x0F) = 15, ET logique pour avoir un offset entre 0 et 15 en utilisant la derniere case du tableau result
+		offset := result[19] & 0x0F
+		// litle Endian -> big Endian de l'offset a offset + 4 du tableau, BigEndian permet aussi de transformer 4 case de tableau en un seul int
+		binCode := binary.BigEndian.Uint32(result[offset : offset+4])
+		// le masque 0x7FFFFFFF efface le bit de poid fort, force une valeur positive 
+		binCode = binCode & 0x7FFFFFFF
+		// garder les 5 dernier chiffre seulement
+		otp := binCode % 1000000
+
+		fmt.Printf("Code TOTP : %06d\n", otp)
 	}
 }
 
@@ -88,22 +102,22 @@ func EncryptFile(srcPath string, key []byte) error {
 		return fmt.Errorf("Wrong content format")
 	}
 
-	// Prépare le moteur AES avec la clé secrète 32o max
+	// initialise le moteur AES avec la clé secrète 32o max, a ce stade on ne peut chiffrer qu'un bloc de la taille de key maximum (32octets)
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return err
 	}
 
-	// Active le mode GCM pour sécuriser et chiffrer tout un fichier
+	// Active le mode GCM pour sécuriser et chiffrer tout un fichier au lieu de 32o
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return err
 	}
 
-	// Crée un espace vide de 12 octets pour le "grain de sel" (Nonce)
+	// alloc d'un tableau de la taille requise pour nonce
 	nonce := make([]byte, gcm.NonceSize())
 	
-	// Remplit cet espace avec de l'aléatoire sécurisé
+	// remplit le tableau nonce au complet avec des valeur random (/dev/urandom sur unix)
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return err
 	}
@@ -111,7 +125,7 @@ func EncryptFile(srcPath string, key []byte) error {
 	// Chiffre les données, ajoute la signature, et préfixe le tout avec le Nonce
 	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
 
-	// Écrit le résultat final dans un nouveau fichier avec les permissions standard
+	// résultat dans ft_otp.key avec les permissions standard
 	return os.WriteFile("ft_otp.key", ciphertext, 0644)
 }
 
@@ -121,19 +135,16 @@ func DecryptFile(srcPath string, key []byte) (string, error) {
 		return "", err
 	}
 
-	// Recrée le moteur AES avec la même clé
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
 
-	// Réactive le mode GCM
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return "", err
 	}
 
-	// Récupère la taille attendue du Nonce (12 octets)
 	nonceSize := gcm.NonceSize()
 	if len(ciphertext) < nonceSize {
 		return "", fmt.Errorf("file to short")
