@@ -76,6 +76,22 @@ func main() {
 	}
 }
 
+// func CreateQRCode(content string) {
+// 	// Nom du fichier de sortie
+//     filePath := "qrcode.png"
+
+//     // Taille de l'image en pixels (ex: 256x256)
+//     size := 256
+
+//     // Génération du QR code et sauvegarde en PNG
+//     err := qrcode.WriteFile(content, qrcode.Medium, size, filePath)
+//     if err != nil {
+//         log.Fatalf("Erreur lors de la génération du QR code : %v", err)
+//     }
+
+//     log.Println("QR code généré avec succès dans", filePath)
+// }
+
 func IsValidHexFile(fileContent string) (bool) {
 	if len(fileContent) < 64 {
 		return false
