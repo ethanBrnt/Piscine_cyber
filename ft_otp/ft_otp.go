@@ -12,6 +12,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"github.com/skip2/go-qrcode"
 )
 
 func main() {
@@ -69,28 +70,26 @@ func main() {
 		binCode := binary.BigEndian.Uint32(result[offset : offset+4])
 		// le masque 0x7FFFFFFF efface le bit de poid fort, force une valeur positive 
 		binCode = binCode & 0x7FFFFFFF
-		// garder les 5 dernier chiffre seulement
+		// garder les 5 dernier chiffres seulement
 		otp := binCode % 1000000
 
 		fmt.Printf("Code TOTP : %06d\n", otp)
 	}
 }
 
-// func CreateQRCode(content string) {
-// 	// Nom du fichier de sortie
-//     filePath := "qrcode.png"
+func CreateQRCode(content string) {
+	// Nom du fichier de sortie
+    filePath := "qrcode.png"
 
-//     // Taille de l'image en pixels (ex: 256x256)
-//     size := 256
+    // Taille de l'image en pixels (ex: 256x256)
+    size := 256
 
-//     // Génération du QR code et sauvegarde en PNG
-//     err := qrcode.WriteFile(content, qrcode.Medium, size, filePath)
-//     if err != nil {
-//         log.Fatalf("Erreur lors de la génération du QR code : %v", err)
-//     }
-
-//     log.Println("QR code généré avec succès dans", filePath)
-// }
+    // Génération du QR code et sauvegarde en PNG
+    err := qrcode.WriteFile(content, qrcode.Medium, size, filePath)
+    if err != nil {
+        fmt.Errorf("Error while generating QR code : %v", err)
+    }
+}
 
 func IsValidHexFile(fileContent string) (bool) {
 	if len(fileContent) < 64 {
@@ -142,6 +141,7 @@ func EncryptFile(srcPath string, key []byte) error {
 	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
 
 	// résultat dans ft_otp.key avec les permissions standard
+	CreateQRCode(string(ciphertext))
 	return os.WriteFile("ft_otp.key", ciphertext, 0644)
 }
 
