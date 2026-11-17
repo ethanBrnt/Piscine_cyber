@@ -5,6 +5,7 @@ import (
 	"os"
 	"io"
 	"fmt"
+	"strings"
 	"time"
 	"encoding/binary"
 	"crypto/hmac"
@@ -12,6 +13,8 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"encoding/base32"
+	"encoding/hex"
 	"github.com/skip2/go-qrcode"
 )
 
@@ -55,10 +58,17 @@ func main() {
 		// alloc tableau de 8 octets
 		buf := make([]byte, 8)
 
+		// Conversion en octets bruts
+		bytes, err := hex.DecodeString(uncryptedKey)
+		if err != nil {
+			fmt.Println("Error hex decode :", err)
+			return
+		}
+
 		// litle Endian -> big Endian dans le tableau de 8 octets
 		binary.BigEndian.PutUint64(buf, uint64(counter))
 		// prepa de la cle et de l'algo de hashage
-		h := hmac.New(sha1.New, []byte(uncryptedKey))
+		h := hmac.New(sha1.New, []byte(bytes))
 		// passer le buffer qui contient le temp actuel a h
 		h.Write(buf)
 		// on calcul et recuper le resultat dans result (20 cases de tableau)
@@ -77,15 +87,19 @@ func main() {
 	}
 }
 
-func CreateQRCode(content string) {
-	// Nom du fichier de sortie
-    filePath := "qrcode.png"
+func CreateQRCode(key string) {
+	data, err := hex.DecodeString(key)
+	if err != nil {
+		fmt.Errorf("Erreur de décodage hex : %v", err)
+	}
+	base32NoPad := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(data)
 
-    // Taille de l'image en pixels (ex: 256x256)
-    size := 256
+	var sb strings.Builder
+	sb.WriteString("otpauth://totp/peronalOtp:eburnet?secret=")
+	sb.WriteString(base32NoPad)
+	sb.WriteString("&issuer=eburnet")
 
-    // Génération du QR code et sauvegarde en PNG
-    err := qrcode.WriteFile(content, qrcode.Medium, size, filePath)
+    err = qrcode.WriteFile(sb.String(), qrcode.Medium, 256, "qrcode.png")
     if err != nil {
         fmt.Errorf("Error while generating QR code : %v", err)
     }
@@ -117,6 +131,8 @@ func EncryptFile(srcPath string, key []byte) error {
 		return fmt.Errorf("Wrong content format")
 	}
 
+	CreateQRCode(string(plaintext))
+
 	// initialise le moteur AES avec la clé secrète 32o max, a ce stade on ne peut chiffrer qu'un bloc de la taille de key maximum (32octets)
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -141,7 +157,6 @@ func EncryptFile(srcPath string, key []byte) error {
 	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
 
 	// résultat dans ft_otp.key avec les permissions standard
-	CreateQRCode(string(ciphertext))
 	return os.WriteFile("ft_otp.key", ciphertext, 0644)
 }
 

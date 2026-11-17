@@ -1,4 +1,4 @@
-module ft_otp
+module nom-de-votre-projet
 
 go 1.18
 
